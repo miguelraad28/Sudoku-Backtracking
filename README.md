@@ -18,16 +18,14 @@ El archivo debe estar en la carpeta src/ y debe tener el formato correcto (núme
 - true: Muestra el progreso del backtracking en tiempo real en la consola (con delays para que se vea el proceso)
 - false: No muestra el progreso, solo el resultado final
 
-## Usar o no la heurística MRV (Minimum Remaining Values)
-### Primero ramificar la celda más restringida
+### aplicarHeuristicaMRV (línea XX)
+- `true`: Usa la heurística MRV (*Minimum Remaining Values*), que selecciona primero la celda vacía más restringida (con menos opciones válidas). Esto puede reducir el número de llamadas recursivas.
+- `false`: Hace la búsqueda de manera secuencial (de izquierda a derecha, arriba a abajo).
 
-Actualmente el código está configurado para usar la heurística MRV, que selecciona la celda vacía con menos opciones válidas primero. Esto reduce el número de llamadas recursivas.
+Puedes cambiar el comportamiento del resolvedor modificando el valor de esta variable en el código, por ejemplo:
 
-Para usar SIN heurística (búsqueda secuencial):
-1. Comenta las líneas 101-127
-2. Descomenta las líneas 80-99
+private static boolean aplicarHeuristicaMRV = true; // Usa MRV (por defecto)
+private static boolean aplicarHeuristicaMRV = false; // Desactiva MRV
 
-Para usar CON heurística MRV (configuración actual):
-1. Deja descomentadas las líneas 101-127
-2. Deja comentadas las líneas 80-99
+Deja `aplicarHeuristicaMRV` en `true` para usar la heurística MRV, o ponlo en `false` para hacer la búsqueda tradicional secuencial.
 

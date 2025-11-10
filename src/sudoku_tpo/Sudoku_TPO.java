@@ -17,6 +17,8 @@ public class Sudoku_TPO {
     private static boolean mostrarProgresoEnConsola = false;
     // Nombre del archivo
     private static String nombreArchivo = "sudoku.txt";
+    // Aplicar con heurística MRV
+    private static boolean aplicarHeuristicaMRV = true;
 
     public static int[][] cargarDesdeArchivo() {
         try (Scanner sc = new Scanner(new File("src/" + nombreArchivo))) {
@@ -46,18 +48,18 @@ public class Sudoku_TPO {
 
             int[][] tablero = new int[filas][filas];
 
-            int celdasNoCero = 0;
+            int celdasLlenas = 0;
             for (int i = 0; i < filas; i++) {
                 for (int j = 0; j < filas; j++) {
                     tablero[i][j] = sc2.nextInt();
                     if (tablero[i][j] != 0)
-                        celdasNoCero++;
+                        celdasLlenas++;
                 }
             }
 
             sc2.close();
 
-            System.out.println("Cantidad de celdas LLENAS: " + celdasNoCero);
+            System.out.println("Cantidad de celdas LLENAS: " + celdasLlenas);
 
             return tablero;
         } catch (Exception e) {
@@ -77,54 +79,55 @@ public class Sudoku_TPO {
             actualizarTableroVisual(tablero);
         }
 
-        // Búsqueda de la siguiente celda vacía (sin heurística)
-        // int N = tablero.length;
-        // int fila = -1, col = -1;
-        // boolean vacioEncontrado = false;
-        // for (int i = 0; i < N && !vacioEncontrado; i++) {
-        //     for (int j = 0; j < N && !vacioEncontrado; j++) {
-        //         if (tablero[i][j] == 0) {
-        //             fila = i;
-        //             col = j;
-        //             vacioEncontrado = true;
-        //         }
-        //     }
-        // }
-
-        // if (!vacioEncontrado) {
-        //     if (mostrarProgresoEnConsola) {
-        //         actualizarTableroVisual(tablero);
-        //     }
-        //     return true; // No hay vacíos - solucionado
-        // }
-
-        // Búsqueda de la siguiente celda vacía (heurística)
         int N = tablero.length;
         int fila = -1, col = -1;
-        int minOpciones = Integer.MAX_VALUE;
-
-        // Buscar celda vacía más restringida (heurística)
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                if (tablero[i][j] == 0) {
-                    int opciones = contarOpcionesValidas(tablero, i, j);
-                    // Si tiene menos opciones que la mejor encontrada, la seleccionamos
-                    if (opciones < minOpciones) {
-                        minOpciones = opciones;
+        // Búsqueda de la siguiente celda vacía (sin heurística)
+        if (!aplicarHeuristicaMRV) {
+            boolean vacioEncontrado = false;
+            for (int i = 0; i < N && !vacioEncontrado; i++) { // O(n^2)
+                for (int j = 0; j < N && !vacioEncontrado; j++) {
+                    if (tablero[i][j] == 0) {
                         fila = i;
                         col = j;
-                        // Si solo tiene 1 opción, es la mejor (más restringida)
-                        if (opciones == 1) {
-                            break;
-                        }
+                        vacioEncontrado = true;
                     }
                 }
             }
-            // Optimización: si encontramos una celda con 1 opción, podemos salir
-            if (minOpciones == 1) {
-                break;
+
+            if (!vacioEncontrado) {
+                if (mostrarProgresoEnConsola) {
+                    actualizarTableroVisual(tablero);
+                }
+                return true; // No hay vacíos - solucionado
+            }
+        } else {
+            // Búsqueda de la siguiente celda vacía (heurística)
+            int minOpciones = Integer.MAX_VALUE;
+
+            // Buscar celda vacía más restringida (heurística)
+            for (int i = 0; i < N; i++) { // O(n^2)
+                for (int j = 0; j < N; j++) { // O(n)
+                    if (tablero[i][j] == 0) {
+                        int opciones = contarOpcionesValidas(tablero, i, j); // O(n^2)
+                        // Si tiene menos opciones que la mejor encontrada, la seleccionamos
+                        if (opciones < minOpciones) {
+                            minOpciones = opciones;
+                            fila = i;
+                            col = j;
+                            // Si solo tiene 1 opción, es la mejor (más restringida)
+                            if (opciones == 1) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                // Optimización: si encontramos una celda con 1 opción, podemos salir
+                if (minOpciones == 1) {
+                    break;
+                }
             }
         }
+        // FIN BUSQUEDA HEURÍSTICA
 
         if (fila == -1 || col == -1) {
             if (mostrarProgresoEnConsola) {
@@ -167,14 +170,16 @@ public class Sudoku_TPO {
         int inicioFilaSubcuadro = fila - fila % tamanioBloque;
         int inicioColSubcuadro = col - col % tamanioBloque;
 
-        for (int i = inicioFilaSubcuadro; i < inicioFilaSubcuadro + tamanioBloque; i++)
-            for (int j = inicioColSubcuadro; j < inicioColSubcuadro + tamanioBloque; j++)
+        for (int i = inicioFilaSubcuadro; i < inicioFilaSubcuadro + tamanioBloque; i++) // O(sqrt(n))
+            for (int j = inicioColSubcuadro; j < inicioColSubcuadro + tamanioBloque; j++) // O(sqrt(n)) =>
+                                                                                          // sqrt(n)*sqrt(n) = sqrt(n^2)
+                                                                                          // = O(n)
                 if (tablero[i][j] == num)
                     // Dentro del subbloque ya está colocado ese número
                     return false;
 
         // Fila y columna de la posición actual
-        for (int i = 0; i < N; i++)
+        for (int i = 0; i < N; i++) // O(n)
             if (tablero[fila][i] == num || tablero[i][col] == num)
                 return false;
 
@@ -182,13 +187,13 @@ public class Sudoku_TPO {
     }
 
     // Cuenta las opciones válidas que tiene una celda
-    public static int contarOpcionesValidas(int[][] tablero, int fila, int col) {
+    public static int contarOpcionesValidas(int[][] tablero, int fila, int col) { // O(n^2)
         int N = tablero.length;
         int contador = 0;
 
         // Probar cada número de 1 a N y contar cuántos son válidos
-        for (int num = 1; num <= N; num++) {
-            if (esValido(tablero, fila, col, num)) {
+        for (int num = 1; num <= N; num++) { // O(n)
+            if (esValido(tablero, fila, col, num)) { // O(n)
                 contador++;
             }
         }
